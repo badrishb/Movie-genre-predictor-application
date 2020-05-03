@@ -1,4 +1,4 @@
-from flask import Flask,render_template,redirect,url_for,request,send_file
+from flask import Flask,render_template,redirect,url_for,request,send_file,session
 from forms import homef
 from PIL import Image
 import cgi
@@ -20,9 +20,13 @@ img=[]
 
 @app.route('/',methods=['GET','POST'])
 def login():
+    
     if(request.method=="POST" ):
         em=request.form['em']
         pwd=request.form['pwd']
+        session['username']=em
+        session.modified=True
+        print(session)
         conn = sqlite3.connect('db/movie.db')
         temp=0
         x=conn.execute('''SELECT * from login ;''')
@@ -32,11 +36,24 @@ def login():
                 print(row)
             print(row[0]==em,row[1]==pwd)
         if(temp==1):
+            
             return redirect(url_for('home'))
         
         return em+' your login failed'
     else:
+        if(not(session.get('username')==None)):
+            print(session)
+            print(session.get('username'))
+            print("I'm in")
+            return redirect(url_for('home'))
+        
+            
         return render_template("login-temp.html")
+@app.route('/logout',methods=['GET','POST'])
+def logout():
+    session.pop('username',None)
+    session.modified=True
+    return redirect(url_for('login'))
 @app.route('/register',methods=['GET','POST'])
 def register():
     if(request.method=="POST" ):
@@ -101,7 +118,7 @@ def home():
 @app.route('/success',methods=['GET'])
 def  success():
     global out
-    return out
+    return render_template("resp.html",value=out)
 
 if __name__ =='__main__':
     
