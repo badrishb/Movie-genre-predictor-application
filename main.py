@@ -10,7 +10,7 @@ from PIL import ImageGrab
 from werkzeug.utils import secure_filename
 from tensorflow.keras.models import load_model,save_model
 
-model=load_model('./genre_model/')
+model=load_model('./genre_model(1)/genre_model')
 out=''
 
 
@@ -24,9 +24,7 @@ def login():
     if(request.method=="POST" ):
         em=request.form['em']
         pwd=request.form['pwd']
-        session['username']=em
-        session.modified=True
-        print(session)
+        
         conn = sqlite3.connect('db/movie.db')
         temp=0
         x=conn.execute('''SELECT * from login ;''')
@@ -36,10 +34,13 @@ def login():
                 print(row)
             print(row[0]==em,row[1]==pwd)
         if(temp==1):
+            session['username']=em
+            session.modified=True
+            print(session)
             
             return redirect(url_for('home'))
         
-        return em+' your login failed'
+        return render_template('login-fail.html')
     else:
         if(not(session.get('username')==None)):
             print(session)
@@ -85,9 +86,9 @@ def home():
     if form.validate_on_submit():
         
         filename = secure_filename(form.photo.data.filename)
-        form.photo.data.save(filename)
+        form.photo.data.save('./images/'+filename)
         global img
-        img=Image.open(filename)
+        img=Image.open('./images/'+filename)
         
         classes=[ 'Action', 'Adventure', 'Animation', 'Biography',
        'Comedy', 'Crime', 'Documentary', 'Drama', 'Family', 'Fantasy',
@@ -98,16 +99,17 @@ def home():
         img=img.resize((350,350))
         img.show()
         img=np.asarray(img,dtype=np.float32)
+        img=img/255
         img=img.reshape(1,350,350,3)
         print(img.shape)
 
         yp=model.predict(img)
         yp=np.array(yp)
-        top3=(np.argsort(yp).reshape(-1,1))
-        top3=top3[-6:-3:]
+        top3=(np.argsort(yp).reshape(-1,1))[::-1]
+        top3=top3[:5]
         global out
         # out=str(classes)+str(yp)
-        out=classes[top3[0][0]]+' '+classes[top3[1][0]]+' '+classes[top3[2][0]]
+        out=classes[top3[0][0]]+' '+classes[top3[1][0]]+' '+classes[top3[2][0]]+' '+classes[top3[3][0]] +' '+classes[top3[4][0]]
         print(top3)
   
         
